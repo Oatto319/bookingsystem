@@ -6,7 +6,7 @@ Mongoose และ MongoDB
 ## เริ่มต้นใช้งาน
 
 1. ติดตั้งแพ็กเกจด้วย `npm install`
-2. สร้างไฟล์ `.env.local` และตั้งค่า MongoDB URI:
+2. คัดลอก `.env.example` เป็น `.env.local` แล้วตั้งค่า MongoDB URI ให้ตรงกับฐานข้อมูลของคุณ:
 
    ```env
    MONGODB_URI=mongodb://127.0.0.1:27017/agriculture-office-booking
