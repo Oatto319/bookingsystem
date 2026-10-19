@@ -43,3 +43,10 @@ Mongoose และ MongoDB
 
 ต้นแบบนี้ยังไม่มีระบบยืนยันตัวตน/สิทธิ์ผู้ใช้ และการตรวจสอบการจองห้องซ้ำยังไม่ใช่การจองแบบ atomic
 ควรเพิ่ม authentication, authorization และกลไกป้องกัน concurrent booking ก่อนใช้งานจริง
+
+## โครงสร้างหน้าจอ
+
+- `app/booking-dashboard.tsx`: เลือกหน้าที่แสดงและเชื่อมข้อมูลกับส่วนประกอบ
+- `components/dashboard/`: shell, ภาพรวม, ฟอร์มจองห้อง, ฟอร์มจองรถ และสมุดเดินทาง
+- `hooks/use-bookings.ts`: โหลดข้อมูลและจัดการ submit ของการจอง/คืนรถ
+- `lib/booking-api.ts`, `lib/booking-data.ts`, `types/booking.ts`: API client, ข้อมูลตัวอย่าง และชนิดข้อมูล
