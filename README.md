@@ -1,37 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ระบบจองทรัพยากรสำนักงานเกษตร
 
-## Getting Started
+ต้นแบบระบบจองห้องประชุมและรถสำนักงาน พัฒนาด้วย Next.js App Router, TypeScript,
+Mongoose และ MongoDB
 
-First, run the development server:
+## เริ่มต้นใช้งาน
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. ติดตั้งแพ็กเกจด้วย `npm install`
+2. สร้างไฟล์ `.env.local` และตั้งค่า MongoDB URI:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   ```env
+   MONGODB_URI=mongodb://127.0.0.1:27017/agriculture-office-booking
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. รัน `npm run dev` และเปิด `http://localhost:3000`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+ระบบจะเพิ่มรายการห้องและรถตัวอย่างให้เมื่อเรียก API ครั้งแรก รายการตัวอย่างในหน้าจอ
+แสดงได้แม้ยังไม่เชื่อมฐานข้อมูล แต่การโหลดและบันทึกข้อมูลจริงต้องเชื่อม MongoDB
 
-## Learn More
+## โครงสร้างข้อมูล
 
-To learn more about Next.js, take a look at the following resources:
+- `MeetingRoom`: ตัวระบุ `code`, ชื่อ, จำนวนที่นั่ง, ที่ตั้ง, สิ่งอำนวยความสะดวก และสถานะใช้งาน
+- `MeetingRoomBooking`: `roomCode`, `roomName`, `startAt`, `endAt`, `topic`, `attendees`,
+  `requester` และ `status` มีดัชนีสำหรับค้นหาช่วงเวลาของแต่ละห้อง
+- `OfficeVehicle`: ตัวระบุ `code`, ชื่อ, ทะเบียน, จำนวนที่นั่ง และสถานะใช้งาน
+- `VehicleBooking`: เก็บ `departureLog` และ `returnLog` แยกกัน พร้อม `totalDistance`
+  ซึ่งคำนวณจากเลขไมล์สิ้นสุดลบเลขไมล์เริ่มต้น หน่วยในต้นแบบนี้เป็นกิโลเมตร
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Method | Endpoint | การทำงาน |
+| --- | --- | --- |
+| `GET` | `/api/catalog` | โหลดห้องประชุมและรถสำนักงาน |
+| `GET`, `POST` | `/api/meeting-bookings` | ดูรายการและจองห้อง (ตรวจห้อง เวลา และจำนวนที่นั่ง) |
+| `GET`, `POST` | `/api/vehicle-bookings` | ดูสมุดเดินทางและบันทึกข้อมูลก่อนออกเดินทาง |
+| `PATCH` | `/api/vehicle-bookings/:id/return` | บันทึกเวลากลับ/เลขไมล์สิ้นสุดและคำนวณระยะทาง |
 
-## Deploy on Vercel
+## ขั้นตอนลงบันทึกการใช้รถ
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **ก่อนออกเดินทาง:** เลือกรถ บันทึกวันเวลา ผู้ขอใช้ ปลายทาง เลขไมล์เริ่มต้น พนักงานขับรถ และหมายเหตุ
+2. **เมื่อกลับถึงสำนักงาน:** เปิดสมุดบันทึก เลือกรายการที่กำลังเดินทาง แล้วบันทึกวันเวลากลับกับเลขไมล์สิ้นสุด
+3. ระบบตรวจสอบว่าเวลาและเลขไมล์ไม่ย้อนก่อนค่าเริ่มต้น แล้วคำนวณและบันทึกผลต่างเป็นระยะทางรวม
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# bookingsystem" 
+ต้นแบบนี้ยังไม่มีระบบยืนยันตัวตน/สิทธิ์ผู้ใช้ และการตรวจสอบการจองห้องซ้ำยังไม่ใช่การจองแบบ atomic
+ควรเพิ่ม authentication, authorization และกลไกป้องกัน concurrent booking ก่อนใช้งานจริง
