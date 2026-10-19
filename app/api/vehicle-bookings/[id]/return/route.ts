@@ -56,7 +56,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       );
     }
 
-    const totalDistance = endingOdometer - existing.departureLog.startingOdometer;
+    const totalDistance =
+      Math.round((endingOdometer - existing.departureLog.startingOdometer) * 10) / 10;
     const booking = await VehicleBooking.findOneAndUpdate(
       { _id: id, status: "in_use", returnLog: null },
       {

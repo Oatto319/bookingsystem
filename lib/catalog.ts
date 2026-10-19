@@ -53,7 +53,17 @@ const defaultVehicles = [
   },
 ];
 
-export async function ensureDefaultCatalog() {
+let seeding: Promise<void> | null = null;
+
+export function ensureDefaultCatalog() {
+  seeding ??= seedDefaultCatalog().catch((error: unknown) => {
+    seeding = null; // ลองใหม่ได้ถ้าเชื่อมต่อฐานข้อมูลไม่สำเร็จ
+    throw error;
+  });
+  return seeding;
+}
+
+async function seedDefaultCatalog() {
   await connectToDatabase();
 
   await Promise.all([

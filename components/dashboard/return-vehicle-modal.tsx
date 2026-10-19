@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownLeft, ArrowRight, Check, Gauge, X } from "lucide-react";
-import type { FormEvent } from "react";
+import { useEffect, type FormEvent } from "react";
 import type { VehicleBooking } from "@/types/booking";
 
 export function ReturnVehicleModal({
@@ -23,7 +23,18 @@ export function ReturnVehicleModal({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const distance = Math.max(Number(endingOdometer || 0) - booking.departureLog.startingOdometer, 0);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const distance = Math.max(
+    Math.round((Number(endingOdometer || 0) - booking.departureLog.startingOdometer) * 10) / 10,
+    0,
+  );
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {

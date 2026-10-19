@@ -55,6 +55,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (startAt.getTime() < Date.now() - 5 * 60_000) {
+      return Response.json(
+        { message: "ไม่สามารถจองห้องประชุมย้อนหลังได้ กรุณาเลือกเวลาเริ่มต้นใหม่" },
+        { status: 400 },
+      );
+    }
+
     const room = await MeetingRoom.findOne({ code: roomCode, active: true }).lean().exec();
     if (!room) {
       return Response.json({ message: "ไม่พบห้องประชุมที่เลือก" }, { status: 404 });
@@ -88,6 +95,22 @@ export async function POST(request: Request) {
       attendees,
       requester,
     });
+
+    // ตรวจซ้ำหลังบันทึก: ถ้ามีคนจองทับเวลาเดียวกันพร้อมกัน ให้รายการที่สร้างทีหลัง (_id มากกว่า) ถอนตัว
+    const raced = await MeetingRoomBooking.exists({
+      _id: { $lt: booking._id },
+      roomCode,
+      status: "confirmed",
+      startAt: { $lt: endAt },
+      endAt: { $gt: startAt },
+    });
+    if (raced) {
+      await MeetingRoomBooking.deleteOne({ _id: booking._id });
+      return Response.json(
+        { message: "ช่วงเวลานี้มีการจองห้องประชุมแล้ว กรุณาเลือกเวลาอื่น" },
+        { status: 409 },
+      );
+    }
 
     return Response.json({ booking }, { status: 201 });
   } catch (error) {

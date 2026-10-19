@@ -143,6 +143,10 @@ export function DashboardShell({
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pageTitle = navItems.find((item) => item.key === view)?.label;
+  const hour = currentDate?.getHours();
+  const greeting =
+    hour === undefined ? "สวัสดี" : hour < 12 ? "สวัสดีตอนเช้า" : hour < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
+  const buddhistYear = currentDate ? currentDate.getFullYear() + 543 : "";
 
   return (
     <div className="app-shell">
@@ -169,7 +173,7 @@ export function DashboardShell({
           <div className="welcome-row">
             <div>
               <div className="eyebrow"><span className="eyebrow-dot" /> ระบบจองทรัพยากรสำนักงาน</div>
-              <h1>{view === "overview" ? "สวัสดีตอนเช้า 🌿" : pageTitle}</h1>
+              <h1>{view === "overview" ? `${greeting} 🌿` : pageTitle}</h1>
               <p className="page-subtitle">
                 {view === "overview" ? "พร้อมเริ่มต้นวันทำงานที่ราบรื่นของคุณแล้วหรือยัง?" : "จัดการการใช้งานทรัพยากรสำนักงานได้ในที่เดียว"}
               </p>
@@ -178,7 +182,7 @@ export function DashboardShell({
           </div>
           <NoticeBanner notice={notice} offline={offline} onDismiss={onDismissNotice} />
           {children}
-          <footer className="page-footer"><span>© 2568 สำนักงานเกษตรจังหวัด</span><span>ระบบบริหารจัดการทรัพยากรภายในสำนักงาน</span></footer>
+          <footer className="page-footer"><span>© {buddhistYear} สำนักงานเกษตรจังหวัด</span><span>ระบบบริหารจัดการทรัพยากรภายในสำนักงาน</span></footer>
         </section>
       </main>
     </div>

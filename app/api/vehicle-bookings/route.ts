@@ -7,11 +7,22 @@ export async function GET() {
   await connection();
   try {
     await ensureDefaultCatalog();
-    const bookings = await VehicleBooking.find()
-      .sort({ "departureLog.departedAt": -1 })
-      .limit(50)
-      .lean()
-      .exec();
+    const [inUse, recent] = await Promise.all([
+      VehicleBooking.find({ status: "in_use" }).lean().exec(),
+      VehicleBooking.find()
+        .sort({ "departureLog.departedAt": -1 })
+        .limit(50)
+        .lean()
+        .exec(),
+    ]);
+    // รวมรายการที่ยังไม่คืนรถทั้งหมด แม้จะเก่ากว่า 50 รายการล่าสุด
+    const byId = new Map<string, (typeof recent)[number]>();
+    for (const booking of [...recent, ...inUse]) byId.set(String(booking._id), booking);
+    const bookings = [...byId.values()].sort(
+      (a, b) =>
+        new Date(b.departureLog.departedAt).getTime() -
+        new Date(a.departureLog.departedAt).getTime(),
+    );
     return Response.json({ bookings });
   } catch (error) {
     console.error("Failed to load vehicle bookings:", error);
@@ -91,6 +102,12 @@ export async function POST(request: Request) {
 
     return Response.json({ booking }, { status: 201 });
   } catch (error) {
+    if ((error as { code?: number }).code === 11000) {
+      return Response.json(
+        { message: "รถคันนี้กำลังถูกใช้งาน กรุณาเลือกคันอื่น" },
+        { status: 409 },
+      );
+    }
     console.error("Failed to create vehicle departure log:", error);
     return Response.json({ message: "บันทึกข้อมูลก่อนออกเดินทางไม่สำเร็จ" }, { status: 503 });
   }

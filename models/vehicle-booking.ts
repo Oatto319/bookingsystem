@@ -26,7 +26,6 @@ const vehicleBookingSchema = new Schema(
       type: String,
       required: true,
       ref: "OfficeVehicle",
-      index: true,
     },
     vehicleName: { type: String, required: true },
     registration: { type: String, required: true },
@@ -45,6 +44,15 @@ const vehicleBookingSchema = new Schema(
 );
 
 vehicleBookingSchema.index({ vehicleCode: 1, "departureLog.departedAt": -1 });
+// รถหนึ่งคันมีรายการ in_use ได้เพียงรายการเดียว (กันการกดจองพร้อมกัน)
+vehicleBookingSchema.index(
+  { vehicleCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: "in_use" },
+    name: "vehicleCode_in_use_unique",
+  },
+);
 
 export type VehicleBookingRecord = InferSchemaType<typeof vehicleBookingSchema>;
 export const VehicleBooking =
