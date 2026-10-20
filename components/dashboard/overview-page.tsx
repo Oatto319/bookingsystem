@@ -7,17 +7,19 @@ import {
   DoorOpen,
   Gauge,
   Leaf,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import type { MeetingBooking, Room, Vehicle, VehicleBooking } from "@/types/booking";
 import { PanelHeading, StatCard, EmptyState } from "./shared";
-import { dateLabel } from "./utils";
+import { dateLabel, expectedReturn, isOverdue, number } from "./utils";
 
 export function OverviewPage({
   rooms,
   vehicles,
   meetingBookings,
   vehicleBookings,
+  vehicleTotal,
   occupiedRoomCodes,
   todayCount,
   currentDate,
@@ -27,12 +29,14 @@ export function OverviewPage({
   vehicles: Vehicle[];
   meetingBookings: MeetingBooking[];
   vehicleBookings: VehicleBooking[];
+  vehicleTotal: number;
   occupiedRoomCodes: Set<string>;
   todayCount: number;
   currentDate: Date | null;
-  onNavigate: (view: "meeting" | "vehicle") => void;
+  onNavigate: (view: "meeting" | "vehicle" | "logbook") => void;
 }) {
-  const inUseCount = vehicleBookings.filter((booking) => booking.status === "in_use").length;
+  const inUse = vehicleBookings.filter((booking) => booking.status === "in_use");
+  const overdue = inUse.filter((booking) => isOverdue(booking, currentDate));
   const upcomingMeetings = [...meetingBookings]
     .filter((booking) => currentDate !== null && new Date(booking.endAt) >= currentDate)
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
@@ -40,15 +44,22 @@ export function OverviewPage({
 
   return (
     <>
+      {overdue.length > 0 && (
+        <div className="notice notice-error" role="alert">
+          <TriangleAlert size={17} />
+          <span>มีรถที่ยังไม่คืนเกินเวลาที่กำหนด {overdue.length} คัน: {overdue.map((b) => `${b.vehicleName} (${b.departureLog.requester})`).join(", ")}</span>
+          <button onClick={() => onNavigate("logbook")} aria-label="ไปที่สมุดบันทึกการเดินทาง"><ArrowRight size={16} /></button>
+        </div>
+      )}
       <div className="stats-grid">
         <StatCard icon={<DoorOpen size={19} />} tone="green" label="ห้องประชุมทั้งหมด" value={String(rooms.length)} suffix="ห้อง" detail={`${occupiedRoomCodes.size} ห้องกำลังใช้งาน`} />
         <StatCard icon={<CalendarDays size={19} />} tone="blue" label="การจองวันนี้" value={String(todayCount)} suffix="รายการ" detail="ห้องประชุม" />
-        <StatCard icon={<CarFront size={19} />} tone="orange" label="รถที่พร้อมใช้งาน" value={String(Math.max(vehicles.length - inUseCount, 0))} suffix={`/ ${vehicles.length} คัน`} detail={`${inUseCount} คันกำลังเดินทาง`} />
-        <StatCard icon={<Gauge size={19} />} tone="purple" label="รายการเดินทาง" value={String(vehicleBookings.length)} suffix="รายการ" detail="บันทึกในสมุดเดินทาง" />
+        <StatCard icon={<CarFront size={19} />} tone="orange" label="รถที่พร้อมใช้งาน" value={String(Math.max(vehicles.length - inUse.length, 0))} suffix={`/ ${vehicles.length} คัน`} detail={`${inUse.length} คันกำลังเดินทาง${overdue.length ? ` · ${overdue.length} เกินกำหนด` : ""}`} />
+        <StatCard icon={<Gauge size={19} />} tone="purple" label="รายการเดินทางทั้งหมด" value={number(vehicleTotal)} suffix="รายการ" detail="บันทึกในสมุดเดินทาง" />
       </div>
       <div className="dashboard-grid">
         <section className="panel meeting-panel">
-          <PanelHeading title="ห้องประชุม" description="ตรวจสอบห้องและสถานะการใช้งาน" action={<button className="text-button" onClick={() => onNavigate("meeting")}>ดูทั้งหมด <ArrowRight size={15} /></button>} />
+          <PanelHeading title="ห้องประชุม" description="ตรวจสอบห้องและสถานะการใช้งาน" action={<button className="text-button" onClick={() => onNavigate("meeting")}>ดูปฏิทิน <ArrowRight size={15} /></button>} />
           <div className="room-list">
             {rooms.map((room, index) => {
               const occupied = occupiedRoomCodes.has(room.code);
@@ -71,17 +82,40 @@ export function OverviewPage({
           <PanelHeading title="ทำรายการด่วน" description="เริ่มจองทรัพยากรของคุณ" action={<span className="sparkle">✳</span>} />
           <button className="quick-action" onClick={() => onNavigate("meeting")}>
             <span className="quick-icon quick-green"><DoorOpen size={19} /></span>
-            <span><strong>จองห้องประชุม</strong><small>เลือกห้องและช่วงเวลาที่ต้องการ</small></span>
+            <span><strong>จองห้องประชุม</strong><small>ดูปฏิทินและเลือกช่วงเวลาที่ว่าง</small></span>
             <ArrowRight size={16} />
           </button>
           <button className="quick-action" onClick={() => onNavigate("vehicle")}>
             <span className="quick-icon quick-orange"><CarFront size={19} /></span>
-            <span><strong>จองรถสำนักงาน</strong><small>บันทึกข้อมูลการเดินทางล่วงหน้า</small></span>
+            <span><strong>บันทึกการใช้รถสำนักงาน</strong><small>ลงเลขไมล์ก่อนนำรถออกเดินทาง</small></span>
             <ArrowRight size={16} />
           </button>
           <div className="quick-tip"><Leaf size={15} /><span>อย่าลืมลงเลขไมล์เมื่อรับรถและกลับถึงสำนักงาน</span></div>
         </section>
       </div>
+      <section className="panel upcoming-panel">
+        <PanelHeading title="รถที่กำลังถูกใช้งาน" description="ใครใช้รถคันไหนอยู่ และคาดว่าจะกลับเมื่อไร" action={<button className="text-button" onClick={() => onNavigate("logbook")}>สมุดเดินทาง <ArrowRight size={15} /></button>} />
+        {inUse.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>รถ</th><th>ผู้ใช้</th><th>ปลายทาง</th><th>ออกเดินทาง</th><th>กำหนดกลับ</th><th>สถานะ</th></tr></thead>
+              <tbody>{inUse.map((booking) => {
+                const late = isOverdue(booking, currentDate);
+                return (
+                  <tr key={booking._id} className={late ? "row-late" : ""}>
+                    <td><strong>{booking.vehicleName}</strong> · {booking.registration}</td>
+                    <td>{booking.departureLog.requester}</td>
+                    <td>{booking.departureLog.destination}</td>
+                    <td>{dateLabel(booking.departureLog.departedAt)}</td>
+                    <td>{dateLabel(expectedReturn(booking).toISOString())}{booking.departureLog.expectedReturnAt ? "" : " (โดยประมาณ)"}</td>
+                    <td><span className={`status-pill ${late ? "status-late" : "status-busy"}`}><b />{late ? "เกินกำหนด" : "กำลังเดินทาง"}</span></td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        ) : <EmptyState text="ขณะนี้ไม่มีรถที่กำลังเดินทาง" />}
+      </section>
       <section className="panel upcoming-panel">
         <PanelHeading title="การประชุมที่กำลังจะมาถึง" description="รายการจองห้องประชุมล่าสุด" action={<button className="text-button" onClick={() => onNavigate("meeting")}>ดูปฏิทิน <ArrowRight size={15} /></button>} />
         {upcomingMeetings.length ? (

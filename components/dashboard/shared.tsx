@@ -54,3 +54,20 @@ export function PanelHeading({
     </div>
   );
 }
+
+export function LoadingSkeleton() {
+  return (
+    <div className="skeleton-page" role="status" aria-live="polite" aria-label="กำลังโหลดข้อมูล">
+      <div className="stats-grid">
+        {[0, 1, 2, 3].map((item) => <div className="skeleton skeleton-card" key={item} />)}
+      </div>
+      <div className="skeleton skeleton-panel" />
+      <div className="skeleton skeleton-panel short" />
+    </div>
+  );
+}
+
+export function SubmitHint({ offline }: { offline: boolean }) {
+  if (!offline) return null;
+  return <p className="offline-hint">เชื่อมต่อฐานข้อมูลไม่ได้ในขณะนี้ จึงยังบันทึกข้อมูลไม่ได้</p>;
+}

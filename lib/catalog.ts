@@ -1,57 +1,9 @@
 import { connectToDatabase } from "@/lib/mongodb";
+import { defaultRooms, defaultVehicles } from "@/lib/default-catalog";
+import { hashPassword } from "@/lib/password";
 import { MeetingRoom } from "@/models/meeting-room";
 import { OfficeVehicle } from "@/models/office-vehicle";
-
-const defaultRooms = [
-  {
-    code: "room-nara",
-    name: "ห้องประชุมรวงข้าว",
-    capacity: 12,
-    location: "อาคารสำนักงาน ชั้น 2",
-    amenities: ["จอแสดงผล", "กระดานไวท์บอร์ด"],
-    color: "sage",
-  },
-  {
-    code: "room-suan",
-    name: "ห้องประชุมเกษตรก้าวหน้า",
-    capacity: 24,
-    location: "อาคารสำนักงาน ชั้น 3",
-    amenities: ["โปรเจกเตอร์", "ระบบประชุมทางไกล"],
-    color: "blue",
-  },
-  {
-    code: "room-rimnam",
-    name: "ห้องประชุมริมคลอง",
-    capacity: 8,
-    location: "อาคารสำนักงาน ชั้น 1",
-    amenities: ["จอแสดงผล"],
-    color: "amber",
-  },
-];
-
-const defaultVehicles = [
-  {
-    code: "car-pickup",
-    name: "รถกระบะ 4 ประตู",
-    registration: "กษ 4521",
-    seats: 5,
-    type: "pickup",
-  },
-  {
-    code: "car-van",
-    name: "รถตู้สำนักงาน",
-    registration: "นข 2084",
-    seats: 11,
-    type: "van",
-  },
-  {
-    code: "car-sedan",
-    name: "รถยนต์ส่วนกลาง",
-    registration: "กษ 3190",
-    seats: 5,
-    type: "sedan",
-  },
-];
+import { User } from "@/models/user";
 
 let seeding: Promise<void> | null = null;
 
@@ -63,7 +15,7 @@ export function ensureDefaultCatalog() {
   return seeding;
 }
 
-async function seedDefaultCatalog() {
+export async function seedDefaultCatalog() {
   await connectToDatabase();
 
   await Promise.all([
@@ -71,11 +23,36 @@ async function seedDefaultCatalog() {
       MeetingRoom.updateOne({ code: room.code }, { $setOnInsert: room }, { upsert: true }),
     ),
     ...defaultVehicles.map((vehicle) =>
-      OfficeVehicle.updateOne(
-        { code: vehicle.code },
-        { $setOnInsert: vehicle },
-        { upsert: true },
-      ),
+      OfficeVehicle.updateOne({ code: vehicle.code }, { $setOnInsert: vehicle }, { upsert: true }),
     ),
   ]);
+  await ensureInitialAdmin();
+}
+
+/** สร้างผู้ดูแลระบบคนแรกเมื่อยังไม่มีผู้ใช้เลย (ตั้งค่าผ่าน ADMIN_USERNAME / ADMIN_PASSWORD) */
+async function ensureInitialAdmin() {
+  if ((await User.estimatedDocumentCount()) > 0) return;
+  const production = process.env.NODE_ENV === "production";
+  const username = (process.env.ADMIN_USERNAME ?? (production ? "" : "admin")).trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD ?? (production ? "" : "admin1234");
+  if (!username || password.length < 8) {
+    console.warn("ยังไม่มีผู้ใช้ในระบบ: ตั้งค่า ADMIN_USERNAME และ ADMIN_PASSWORD (อย่างน้อย 8 ตัวอักษร) เพื่อสร้างผู้ดูแลระบบ");
+    return;
+  }
+  await User.updateOne(
+    { username },
+    {
+      $setOnInsert: {
+        username,
+        displayName: "ผู้ดูแลระบบ",
+        role: "admin",
+        passwordHash: hashPassword(password),
+        active: true,
+      },
+    },
+    { upsert: true },
+  );
+  if (!process.env.ADMIN_PASSWORD) {
+    console.warn(`สร้างผู้ดูแลระบบเริ่มต้น "${username}" ด้วยรหัสผ่านตัวอย่าง กรุณาเปลี่ยนรหัสผ่านทันที`);
+  }
 }

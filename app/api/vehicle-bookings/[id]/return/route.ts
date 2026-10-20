@@ -1,12 +1,13 @@
 import { isValidObjectId } from "mongoose";
-import { ensureDefaultCatalog } from "@/lib/catalog";
+import { requireUser } from "@/lib/session";
 import { VehicleBooking } from "@/models/vehicle-booking";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: RouteContext) {
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
   try {
-    await ensureDefaultCatalog();
     const { id } = await params;
     if (!isValidObjectId(id)) {
       return Response.json({ message: "ไม่พบรายการใช้รถที่ต้องการ" }, { status: 404 });
@@ -18,6 +19,16 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const data = body as Record<string, unknown>;
+    const optionalNumber = (value: unknown) =>
+      value === undefined || value === null || value === "" ? null : Number(value);
+    const fuelLiters = optionalNumber(data.fuelLiters);
+    const fuelCost = optionalNumber(data.fuelCost);
+    if (
+      (fuelLiters !== null && (!Number.isFinite(fuelLiters) || fuelLiters < 0 || fuelLiters > 1000)) ||
+      (fuelCost !== null && (!Number.isFinite(fuelCost) || fuelCost < 0 || fuelCost > 1_000_000))
+    ) {
+      return Response.json({ message: "จำนวนลิตรหรือค่าน้ำมันไม่ถูกต้อง" }, { status: 400 });
+    }
     const returnedAt = new Date(typeof data.returnedAt === "string" ? data.returnedAt : "");
     const endingOdometer = Number(data.endingOdometer);
     if (
@@ -43,6 +54,12 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         { status: 409 },
       );
     }
+    if (auth.user.role !== "admin" && existing.createdBy !== auth.user.username) {
+      return Response.json(
+        { message: "เฉพาะผู้บันทึกการใช้รถหรือผู้ดูแลระบบเท่านั้นที่บันทึกขากลับได้" },
+        { status: 403 },
+      );
+    }
     if (returnedAt < existing.departureLog.departedAt) {
       return Response.json(
         { message: "วันเวลากลับต้องไม่ก่อนวันเวลาออกเดินทาง" },
@@ -62,7 +79,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       { _id: id, status: "in_use", returnLog: null },
       {
         $set: {
-          returnLog: { returnedAt, endingOdometer },
+          returnLog: { returnedAt, endingOdometer, fuelLiters, fuelCost },
           totalDistance,
           status: "returned",
         },

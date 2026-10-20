@@ -1,59 +1,38 @@
-import { ensureDefaultCatalog } from "@/lib/catalog";
-import { MeetingRoomBooking } from "@/models/meeting-room-booking";
+import { parseMeetingInput } from "@/lib/meeting-input";
+import { requireUser } from "@/lib/session";
 import { MeetingRoom } from "@/models/meeting-room";
+import { MeetingRoomBooking } from "@/models/meeting-room-booking";
 import { connection } from "next/server";
 
 export async function GET() {
   await connection();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
   try {
-    await ensureDefaultCatalog();
-    const bookings = await MeetingRoomBooking.find({ status: "confirmed" })
+    // ย้อนหลัง 30 วัน เพื่อให้ปฏิทินเลื่อนดูย้อนหลังได้โดยรายการไม่โตไม่จำกัด
+    const since = new Date(Date.now() - 30 * 86_400_000);
+    const bookings = await MeetingRoomBooking.find({ status: "confirmed", endAt: { $gte: since } })
       .sort({ startAt: 1 })
       .lean()
       .exec();
     return Response.json({ bookings });
   } catch (error) {
     console.error("Failed to load meeting room bookings:", error);
-    return Response.json(
-      { message: "ไม่สามารถโหลดรายการจองห้องประชุมได้" },
-      { status: 503 },
-    );
+    return Response.json({ message: "ไม่สามารถโหลดรายการจองห้องประชุมได้" }, { status: 503 });
   }
 }
 
 export async function POST(request: Request) {
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
   try {
-    await ensureDefaultCatalog();
-    const body: unknown = await request.json();
+    const body: unknown = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return Response.json({ message: "ข้อมูลการจองไม่ถูกต้อง" }, { status: 400 });
     }
-
-    const data = body as Record<string, unknown>;
-    const roomCode = typeof data.roomCode === "string" ? data.roomCode : "";
-    const topic = typeof data.topic === "string" ? data.topic.trim() : "";
-    const requester = typeof data.requester === "string" ? data.requester.trim() : "";
-    const startAt = new Date(typeof data.startAt === "string" ? data.startAt : "");
-    const endAt = new Date(typeof data.endAt === "string" ? data.endAt : "");
-    const attendees = Number(data.attendees);
-
-    if (
-      !roomCode ||
-      !topic ||
-      !requester ||
-      topic.length > 160 ||
-      requester.length > 100 ||
-      !Number.isInteger(attendees) ||
-      attendees < 1 ||
-      Number.isNaN(startAt.getTime()) ||
-      Number.isNaN(endAt.getTime()) ||
-      endAt <= startAt
-    ) {
-      return Response.json(
-        { message: "กรุณาตรวจสอบห้อง หัวข้อ ผู้จอง จำนวนผู้เข้าร่วม และช่วงเวลา" },
-        { status: 400 },
-      );
-    }
+    const parsed = parseMeetingInput(body as Record<string, unknown>);
+    if (!parsed.ok) return Response.json({ message: parsed.message }, { status: 400 });
+    const { roomCode, topic, startAt, endAt, attendees, department, phone } = parsed.value;
 
     if (startAt.getTime() < Date.now() - 5 * 60_000) {
       return Response.json(
@@ -63,9 +42,7 @@ export async function POST(request: Request) {
     }
 
     const room = await MeetingRoom.findOne({ code: roomCode, active: true }).lean().exec();
-    if (!room) {
-      return Response.json({ message: "ไม่พบห้องประชุมที่เลือก" }, { status: 404 });
-    }
+    if (!room) return Response.json({ message: "ไม่พบห้องประชุมที่เลือก" }, { status: 404 });
     if (attendees > room.capacity) {
       return Response.json(
         { message: `ห้องนี้รองรับผู้เข้าร่วมได้ไม่เกิน ${room.capacity} คน` },
@@ -73,13 +50,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const conflictingBooking = await MeetingRoomBooking.exists({
+    const conflict = await MeetingRoomBooking.exists({
       roomCode,
       status: "confirmed",
       startAt: { $lt: endAt },
       endAt: { $gt: startAt },
     });
-    if (conflictingBooking) {
+    if (conflict) {
       return Response.json(
         { message: "ช่วงเวลานี้มีการจองห้องประชุมแล้ว กรุณาเลือกเวลาอื่น" },
         { status: 409 },
@@ -93,7 +70,10 @@ export async function POST(request: Request) {
       endAt,
       topic,
       attendees,
-      requester,
+      department: department || auth.user.department,
+      phone,
+      requester: auth.user.displayName,
+      requesterId: auth.user.username,
     });
 
     // ตรวจซ้ำหลังบันทึก: ถ้ามีคนจองทับเวลาเดียวกันพร้อมกัน ให้รายการที่สร้างทีหลัง (_id มากกว่า) ถอนตัว

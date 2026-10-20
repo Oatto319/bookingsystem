@@ -313,3 +313,115 @@ td strong { color: #3d473e; font-size: 10px; font-weight: 600; }
   .page-footer { gap: 10px; font-size: 8px; }
   .page-footer span:last-child { text-align: right; }
 }
+
+/* ===== เพิ่มใหม่: ล็อกอิน, ปฏิทิน, โหลด, สมุดเดินทาง, แอดมิน ===== */
+.stack { display: grid; gap: 16px; }
+.footer-actions { display: flex; gap: 9px; align-items: center; }
+.readonly-input { background: #f6f8f5 !important; color: #6d776d !important; }
+.field-error, .field-warning, .field-hint, .offline-hint { margin: -6px 0 0; font-size: 10px; display: flex; align-items: center; gap: 6px; }
+.field-error { color: #b0503b; }
+.field-warning { color: #8a6a20; background: #fff8e8; border: 1px solid #f4e7c2; border-radius: 7px; padding: 8px 10px; margin: 0; }
+.field-hint { color: #8b948a; }
+.offline-hint { color: #8a6a20; justify-content: flex-end; margin: 0; }
+.status-late { color: #b0503b; background: #fdeeea; }
+.secondary-button.danger, .icon-button.danger { color: #b0503b; border-color: #f0d6cf; }
+.secondary-button { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.row-late td { background: #fff7f5; }
+.row-inactive td { opacity: .55; }
+.row-total td { border-top: 2px solid #e4e9e1; background: #fafcf9; }
+.row-actions { white-space: nowrap; }
+.row-actions .text-button { margin-right: 10px; }
+
+/* ล็อกอิน */
+.login-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login-card { width: min(100%, 380px); padding: 30px 26px; display: grid; gap: 12px; }
+.login-card h1 { font-size: 22px; margin: 6px 0 0; }
+.login-help { color: #9aa19a; font-size: 10px; text-align: center; margin: 0; }
+
+/* โหลด (skeleton) */
+.skeleton { background: linear-gradient(90deg, #eef1ec 25%, #f6f8f5 37%, #eef1ec 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 11px; }
+.skeleton-page { width: 100%; }
+.skeleton-card { min-height: 144px; }
+.skeleton-panel { height: 220px; margin-bottom: 15px; }
+.skeleton-panel.short { height: 140px; }
+.skeleton-trip { height: 82px; margin-bottom: 10px; }
+@keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* ปฏิทินห้องประชุม */
+.calendar-panel { padding: 20px; }
+.cal-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.segmented { display: inline-flex; border: 1px solid #e3e8e0; border-radius: 8px; overflow: hidden; }
+.segmented button { border: 0; background: #fff; color: #7a847a; padding: 8px 13px; font-size: 10px; }
+.segmented button.active { background: var(--green-soft); color: var(--green-dark); font-weight: 700; }
+.cal-select, .cal-date, .filter-select { height: 34px; border: 1px solid #e3e8e0; border-radius: 8px; padding: 0 9px; font-size: 10px; background: #fff; color: #4b554b; }
+.cal-nav { display: flex; align-items: center; gap: 9px; margin: 16px 0 12px; flex-wrap: wrap; }
+.cal-heading { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; min-width: 190px; justify-content: center; }
+.cal-scroll { overflow: auto; max-height: 560px; border: 1px solid #edf0ec; border-radius: 10px; }
+.cal-grid { display: grid; position: relative; min-width: 100%; }
+.cal-corner, .cal-head { position: sticky; top: 0; z-index: 3; background: #fafcf9; border-bottom: 1px solid #e6ebe3; }
+.cal-corner { left: 0; z-index: 4; }
+.cal-head { padding: 9px 8px; display: grid; gap: 2px; text-align: center; border-left: 1px solid #edf0ec; }
+.cal-head strong { font-size: 10px; } .cal-head small { font-size: 9px; color: #9aa39a; min-height: 11px; }
+.cal-axis { position: sticky; left: 0; z-index: 2; background: #fff; border-right: 1px solid #edf0ec; }
+.cal-axis span { position: absolute; right: 6px; transform: translateY(-50%); font-size: 9px; color: #9aa39a; }
+.cal-axis span:first-child { transform: none; }
+.cal-col { position: relative; border-left: 1px solid #edf0ec; }
+.cal-slot { display: block; width: 100%; height: 24px; border: 0; border-top: 1px dashed #f0f2ef; background: transparent; padding: 0; cursor: pointer; }
+.cal-slot.is-hour { border-top: 1px solid #e9ede7; }
+.cal-slot:hover:not(:disabled) { background: #e9f3e7; }
+.cal-slot:disabled { cursor: default; background: transparent; opacity: 1; }
+.cal-col .cal-slot:disabled { background: repeating-linear-gradient(45deg, transparent 0 6px, #f6f7f5 6px 12px); }
+.cal-selection { position: absolute; left: 2px; right: 2px; background: #3c755240; border: 2px dashed var(--green); border-radius: 6px; pointer-events: none; z-index: 1; }
+.cal-event { position: absolute; left: 3px; right: 3px; z-index: 2; border: 1px solid #00000014; border-left-width: 4px; border-radius: 6px; padding: 2px 6px; text-align: left; overflow: hidden; display: grid; align-content: start; gap: 1px; font-size: 9px; }
+.cal-event strong { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-event span { font-size: 9px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-event.is-mine { box-shadow: 0 0 0 2px var(--green); }
+.cal-event.is-active { outline: 3px solid #b5d3bb; }
+.cal-now { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid #d65d4a; z-index: 3; pointer-events: none; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 11px; color: #8b948a; font-size: 9px; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid #00000014; }
+.legend-free { background: #e9f3e7; } .legend-busy { background: #edf3e9; border-left: 4px solid #658764 !important; }
+.legend-mine { box-shadow: 0 0 0 2px var(--green); background: #fff; } .legend-now { height: 0 !important; border: 0 !important; border-top: 2px solid #d65d4a !important; border-radius: 0 !important; }
+.cal-detail { margin-top: 13px; display: flex; justify-content: space-between; gap: 14px; background: #f7f9f6; border: 1px solid #e8ede5; border-radius: 9px; padding: 12px 14px; font-size: 10px; }
+.cal-detail p { margin: 5px 0 0; color: #7d877d; }
+.cal-detail-actions { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.my-bookings { margin: 15px 0 5px; display: grid; gap: 8px; }
+.my-booking { display: flex; justify-content: space-between; gap: 8px; border: 1px solid #edf0eb; border-radius: 8px; padding: 9px 10px; }
+.my-booking > div:first-child { display: grid; gap: 3px; min-width: 0; }
+.my-booking strong { font-size: 10px; } .my-booking span { font-size: 9px; color: #8b948a; }
+.my-booking-actions { display: flex; gap: 6px; }
+
+/* สมุดเดินทาง */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-top: 16px; }
+.filter-bar .search-field input { width: 190px; }
+.filter-date { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: #7a847a; }
+.filter-date input { height: 34px; border: 1px solid #e3e8e0; border-radius: 8px; padding: 0 8px; font-size: 10px; }
+.logbook-count { color: #8b948a; font-size: 10px; margin-top: 14px; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 16px; font-size: 10px; color: #7a847a; }
+.summary-panel { margin-top: 16px; min-height: 0; }
+.trip-card.is-late { border-color: #f0cfc7; background: #fffafa; }
+.trip-title h3 small { color: #9aa39a; font-weight: 400; margin-left: 4px; }
+.trip-purpose { margin-top: 7px; font-size: 9px; color: #7d877d; }
+
+/* แอดมิน */
+.admin-tabs { margin: 16px 0; }
+.admin-form { margin-top: 20px; padding-top: 16px; border-top: 1px solid #eff1ee; }
+.admin-form h3 { font-size: 12px; margin: 0; }
+.mobile-account { display: flex; gap: 12px; align-items: center; padding: 8px 18px; background: #fff; border-bottom: 1px solid var(--line); font-size: 11px; }
+.profile .icon-button { width: 28px; height: 28px; flex: 0 0 auto; }
+.profile-copy { min-width: 0; } .profile-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 800px) {
+  .cal-heading { min-width: 0; }
+  .filter-bar .search-field input { width: 130px; }
+}
+
+/* พิมพ์: ซ่อนเมนู/ปุ่ม แสดงเฉพาะเนื้อหา */
+@media print {
+  .sidebar, .topbar, .welcome-row, .no-print, .notice, .page-footer, .mobile-nav, .mobile-account { display: none !important; }
+  body, .main-area, .page-content { background: #fff !important; padding: 0 !important; max-width: none !important; }
+  .panel { box-shadow: none !important; border: 0 !important; }
+  .trip-card { break-inside: avoid; }
+}
