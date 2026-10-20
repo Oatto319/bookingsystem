@@ -123,7 +123,7 @@ function RoomsAdmin({ rooms, act }: { rooms: Room[]; act: Act }) {
       <form className="booking-form admin-form" onSubmit={submit}>
         <h3>{editing ? `แก้ไขห้อง (${editing})` : "เพิ่มห้องประชุมใหม่"}</h3>
         <div className="form-row">
-          <label className="field-label">รหัสห้อง <span>*</span><input required disabled={!!editing} pattern="[a-z0-9\-]{3,40}" value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="เช่น room-new (a-z 0-9 -)" /></label>
+          <label className="field-label">รหัสห้อง <small>(เว้นว่างเพื่อสร้างอัตโนมัติ)</small><input disabled={!!editing} pattern="[a-z0-9\-]{3,40}" value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="ไม่ต้องกรอกก็ได้" /></label>
           <label className="field-label">ชื่อห้อง <span>*</span><input required maxLength={100} value={form.name} onChange={(e) => set("name", e.target.value)} /></label>
         </div>
         <div className="form-row">
@@ -182,7 +182,7 @@ function VehiclesAdmin({ vehicles, act }: { vehicles: Vehicle[]; act: Act }) {
       <form className="booking-form admin-form" onSubmit={submit}>
         <h3>{editing ? `แก้ไขรถ (${editing})` : "เพิ่มรถสำนักงานใหม่"}</h3>
         <div className="form-row">
-          <label className="field-label">รหัสรถ <span>*</span><input required disabled={!!editing} pattern="[a-z0-9\-]{3,40}" value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="เช่น car-new (a-z 0-9 -)" /></label>
+          <label className="field-label">รหัสรถ <small>(เว้นว่างเพื่อสร้างอัตโนมัติ)</small><input disabled={!!editing} pattern="[a-z0-9\-]{3,40}" value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="ไม่ต้องกรอกก็ได้" /></label>
           <label className="field-label">ชื่อรถ <span>*</span><input required maxLength={100} value={form.name} onChange={(e) => set("name", e.target.value)} /></label>
         </div>
         <div className="form-row">

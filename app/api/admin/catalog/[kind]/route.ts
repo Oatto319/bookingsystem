@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { parseCatalogItem } from "@/lib/catalog-input";
 import { requireUser } from "@/lib/session";
 import { MeetingRoom } from "@/models/meeting-room";
@@ -14,8 +15,19 @@ export async function POST(request: Request, { params }: RouteContext) {
       return Response.json({ message: "ไม่พบประเภทข้อมูล" }, { status: 404 });
     }
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+    // ถ้า admin ไม่กรอกรหัส ให้สร้างรหัสอัตโนมัติ (เช่น room-k3x9a2 / car-k3x9a2)
+    if (body && !(typeof body.code === "string" && body.code.trim())) {
+      body.code = `${kind === "rooms" ? "room" : "car"}-${randomBytes(4).toString("hex")}`;
+    }
     const parsed = parseCatalogItem(kind, body, { requireCode: true });
     if (!parsed.ok) return Response.json({ message: parsed.message }, { status: 400 });
+
+    if (kind === "vehicles") {
+      const duplicate = await OfficeVehicle.exists({ registration: parsed.value.registration });
+      if (duplicate) {
+        return Response.json({ message: "ทะเบียนรถนี้มีอยู่ในระบบแล้ว" }, { status: 409 });
+      }
+    }
 
     const model = kind === "rooms" ? MeetingRoom : OfficeVehicle;
     const item = await model.create(parsed.value);
